@@ -2,7 +2,7 @@
 
 ステッピングモーター(stepper motor)ライブラリ
 
-## 1. wiring stepper motor to Raspberry Pi
+## 1. Raspberry Pi + DRV8835 + 28BYJ-48
 
 配線と、引数の順番の違いに注意！
 
