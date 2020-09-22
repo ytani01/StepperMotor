@@ -52,6 +52,7 @@ class StepperMotor(threading.Thread):
             self.pi.write(self.pin[i], 0)
 
         self.seq = self.SEQ_FULL
+#        self.seq = self.SEQ_HALF
         self.cur_i = 0
 
     def end(self):
@@ -108,25 +109,34 @@ class App:
     DEF_INTERVAL = 0.5  # sec
     
     def __init__(self, pin1, pin2, pin3, pin4, interval=DEF_INTERVAL,
+                 ccw=False,
+                 count=0,
                  debug=False):
         self._debug = debug
         self._lgr = get_logger(__class__.__name__, self._debug)
         self._lgr.debug('pin1,pin2,pin3,pin4=%s,%s,%s,%s',
                         pin1, pin2, pin3, pin4)
-
-        self.sm = StepperMotor(pin1, pin2, pin3, pin4, interval, debug=debug)
+        self._lgr.debug('interval=%s, count=%s', interval, count)
 
         self.interval = interval
+        if ccw:
+            self.direction = StepperMotor.CCW
+        else:
+            self.direction = StepperMotor.CW
+            
+        self.count= count
 
+        self.sm = StepperMotor(pin1, pin2, pin3, pin4, self.interval,
+                               debug=debug)
+
+    def main(self):
+        self._lgr.debug('')
+        self.sm.move(count=self.count, direction=self.direction)
+        
     def end(self):
         self._lgr.debug('')
         self.sm.end()
 
-    def main(self):
-        self._lgr.debug('')
-        self.sm.move(2048)
-        self.sm.move(2048, direction=StepperMotor.CCW)
-        
 
 import click
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
@@ -139,17 +149,21 @@ StepperMotor class
 @click.argument('pin2', type=int)
 @click.argument('pin3', type=int)
 @click.argument('pin4', type=int)
-@click.option('--interval', '-i', 'interval', type=float,
+@click.option('--interval', '-i', 'interval', type=float, default=0.0,
               help='interval sec')
+@click.option('--ccw', 'ccw', is_flag=True, default=False,
+              help='direction CCW')
+@click.option('--count', '-c', 'count', type=int, default=0,
+              help='count')
 @click.option('--debug', '-d', 'debug', is_flag=True, default=False,
               help='debug flag')
-def main(pin1, pin2, pin3, pin4, interval, debug):
+def main(pin1, pin2, pin3, pin4, interval, ccw, count, debug):
     lgr = get_logger(__name__, debug)
     lgr.debug('')
 
     lgr.info('start')
 
-    app = App(pin1, pin2, pin3, pin4, interval, debug=debug)
+    app = App(pin1, pin2, pin3, pin4, interval, ccw, count, debug=debug)
 
     try:
         app.main()
