@@ -186,7 +186,7 @@
 <wire x1="109.2" y1="0" x2="109.2" y2="84.76" width="0" layer="20"/>
 <wire x1="109.2" y1="84.76" x2="0" y2="84.76" width="0" layer="20"/>
 <wire x1="0" y1="84.76" x2="0" y2="0" width="0" layer="20"/>
-<text x="8.89" y="11.43" size="1.778" layer="21">$ StepperMotor.py 6 19 13 26</text>
+<text x="8.89" y="11.43" size="1.778" layer="21">$ StepperMotor.py 13 19 16 26</text>
 <wire x1="7.62" y1="13.97" x2="43.18" y2="13.97" width="0.2" layer="21"/>
 <wire x1="43.18" y1="13.97" x2="43.18" y2="10.16" width="0.2" layer="21"/>
 <wire x1="43.18" y1="10.16" x2="7.62" y2="10.16" width="0.2" layer="21"/>
