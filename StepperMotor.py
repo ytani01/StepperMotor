@@ -17,27 +17,36 @@ class StepperMotor:
     CW = 1
     CCW = -1
 
-    SEQ_FULL = ((1, 0, 0, 0),
-                (0, 1, 0, 0),
-                (0, 0, 1, 0),
-                (0, 0, 0, 1))
+    SEQ_WAVE = [[1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, 1, 0],
+                [0, 0, 0, 1]]
 
-    SEQ_HALF = ((1, 0, 0, 0),
-                (1, 1, 0, 0),
-                (0, 1, 0, 0),
-                (0, 1, 1, 0),
-                (0, 0, 1, 0),
-                (0, 0, 1, 1),
-                (0, 0, 0, 1),
-                (1, 0, 0, 1))
+    SEQ_FULL = [[1, 0, 0, 1],
+                [1, 1, 0, 0],
+                [0, 1, 1, 0],
+                [0, 0, 1, 1]]
 
-    def __init__(self, pin1, pin2, pin3, pin4, pi=None, debug=False):
-        self._debug = debug
-        self._log = get_logger(__class__.__name__, self._debug)
+    SEQ_HALF = [[1, 0, 0, 1],
+                [1, 0, 0, 0],
+                [1, 1, 0, 0],
+                [0, 1, 0, 0],
+                [0, 1, 1, 0],
+                [0, 0, 1, 0],
+                [0, 0, 1, 1],
+                [0, 0, 0, 1]]
+
+
+    def __init__(self, pin1, pin2, pin3, pin4, seq=SEQ_WAVE, pi=None,
+                 debug=False):
+        self._dbg = debug
+        self._log = get_logger(__class__.__name__, self._dbg)
         self._log.debug('pin1,pin2,pin3,pin4=%s,%s,%s,%s',
                         pin1, pin2, pin3, pin4)
+        self._log.debug('seq=%s, pi=%s', seq, pi)
 
         self.pin = (pin1, pin2, pin3, pin4)
+        self.seq = seq
 
         self.pin_n = len(self.pin)
 
@@ -51,8 +60,6 @@ class StepperMotor:
             self.pi.set_mode(self.pin[i], pigpio.OUTPUT)
             self.pi.write(self.pin[i], 0)
 
-        self.seq = self.SEQ_FULL
-        self.seq = self.SEQ_HALF
         self.cur_i = 0
 
     def end(self):
@@ -98,17 +105,23 @@ class StepperMotor:
 
 
 class Sample:
-    DEF_INTERVAL = 0.003  # sec
+    DEF_INTERVAL = 0.005  # sec
+    SEQ = {'wave': StepperMotor.SEQ_WAVE,
+           'full': StepperMotor.SEQ_FULL,
+           'half': StepperMotor.SEQ_HALF}
 
-    def __init__(self, pin1, pin2, pin3, pin4, interval=DEF_INTERVAL,
+    def __init__(self, pin1, pin2, pin3, pin4,
+                 interval=DEF_INTERVAL,
                  ccw=False,
                  count=0,
+                 seq=SEQ['wave'],
                  debug=False):
-        self._debug = debug
-        self._log = get_logger(__class__.__name__, self._debug)
+        self._dbg = debug
+        self._log = get_logger(__class__.__name__, self._dbg)
         self._log.debug('pin1,pin2,pin3,pin4=%s,%s,%s,%s',
                         pin1, pin2, pin3, pin4)
-        self._log.debug('interval=%s, ccw=%s, count=%s', interval, ccw, count)
+        self._log.debug('interval=%s, ccw=%s, count=%s, seq=%s',
+                        interval, ccw, count, seq)
 
         self.interval = interval
         if ccw:
@@ -117,8 +130,10 @@ class Sample:
             self.direction = StepperMotor.CW
 
         self.count = count
+        self.seq = self.SEQ[seq]
 
-        self.sm = StepperMotor(pin1, pin2, pin3, pin4, debug=self._debug)
+        self.sm = StepperMotor(pin1, pin2, pin3, pin4, seq=self.seq,
+                               debug=self._dbg)
 
     def main(self):
         self._log.debug('')
@@ -147,22 +162,26 @@ StepperMotor class
               help='direction CCW')
 @click.option('--count', '-c', 'count', type=int, default=0,
               help='count')
+@click.option('--seq', '-s', 'seq', type=str, default="wave",
+              help='drive sequence')
 @click.option('--debug', '-d', 'debug', is_flag=True, default=False,
               help='debug flag')
-def main(pin1, pin2, pin3, pin4, interval, ccw, count, debug):
-    lgr = get_logger(__name__, debug)
-    lgr.debug('')
+def main(pin1, pin2, pin3, pin4, interval, ccw, count, seq, debug):
+    log = get_logger(__name__, debug)
+    log.debug('(pin1, pin2, pin3, pin4)=%s', (pin1, pin2, pin3, pin4))
+    log.debug('interval=%s, ccw=%s, count=%s, seq=%s',
+              interval, ccw, count, seq)
 
-    lgr.info('start')
+    log.info('start')
 
-    app = Sample(pin1, pin2, pin3, pin4, interval, ccw, count, debug=debug)
+    app = Sample(pin1, pin2, pin3, pin4, interval, ccw, count, seq, debug=debug)
 
     try:
         app.main()
     finally:
-        lgr.debug('finally')
+        log.debug('finally')
         app.end()
-        lgr.debug('end')
+        log.debug('end')
 
 
 if __name__ == '__main__':
