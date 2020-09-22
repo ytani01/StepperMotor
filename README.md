@@ -4,6 +4,8 @@
 
 ## 1. wiring stepper motor to Raspberry Pi
 
+配線と、引数の順番の違いに注意！
+
 ![](doc/DRV8835-28BYJ-01.png)
 ![](doc/DRV8835-28BYJ-01a.png)
 
