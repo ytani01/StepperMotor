@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# (c) Yoichi Tanibayashi
+# (c) 2019 2020 Yoichi Tanibayashi
 #
 """
 """
@@ -18,28 +18,30 @@ class StepperMotor(threading.Thread):
     CW = 1
     CCW = -1
 
-    SEQ_FULL = ((1, 0, 0, 0), 
-                (0, 1, 0, 0), 
-                (0, 0, 1, 0), 
+    SEQ_FULL = ((1, 0, 0, 0),
+                (0, 1, 0, 0),
+                (0, 0, 1, 0),
                 (0, 0, 0, 1))
 
-    SEQ_HALF = ((1, 0, 0, 0),  
-                (1, 1, 0, 0),  
-                (0, 1, 0, 0), 
-                (0, 1, 1, 0), 
-                (0, 0, 1, 0), 
-                (0, 0, 1, 1), 
-                (0, 0, 0, 1), 
+    SEQ_HALF = ((1, 0, 0, 0),
+                (1, 1, 0, 0),
+                (0, 1, 0, 0),
+                (0, 1, 1, 0),
+                (0, 0, 1, 0),
+                (0, 0, 1, 1),
+                (0, 0, 0, 1),
                 (1, 0, 0, 1))
 
     def __init__(self, pin1, pin2, pin3, pin4, interval, pi=None, debug=False):
         self._debug = debug
-        self._lgr = get_logger(__class__.__name__, self._debug)
-        self._lgr.debug('pin1,pin2,pin3,pin4=%s,%s,%s,%s interval=%s',
+        self._log = get_logger(__class__.__name__, self._debug)
+        self._log.debug('pin1,pin2,pin3,pin4=%s,%s,%s,%s interval=%s',
                         pin1, pin2, pin3, pin4, interval)
 
         self.pin = (pin1, pin2, pin3, pin4)
         self.interval = interval
+
+        self.pin_n = len(self.pin)
 
         self.mypi = False
         self.pi = pi
@@ -47,54 +49,45 @@ class StepperMotor(threading.Thread):
             self.mypi = True
             self.pi = pigpio.pi()
 
-        for i in range(4):
+        for i in range(self.pin_n):
             self.pi.set_mode(self.pin[i], pigpio.OUTPUT)
             self.pi.write(self.pin[i], 0)
 
         self.seq = self.SEQ_FULL
-#        self.seq = self.SEQ_HALF
+        # self.seq = self.SEQ_HALF
         self.cur_i = 0
 
     def end(self):
-        self._lgr.debug('')
+        self._log.debug('')
         self.stop()
         if self.mypi:
             self.pi.stop()
 
     def stop(self):
-        self._lgr.debug('')
-        for i in range(len(self.pin)):
-            self.pi.write(self.pin[i], 0)
+        self._log.debug('')
+        self.write([0, 0, 0, 0])
 
     def write(self, val):
-        self._lgr.debug('val=%s', val)
+        self._log.debug('val=%s', val)
 
-        for i in range(len(self.pin)):
-            self.pi.write(self.pin[i], val[i])
-
-    def next_step(self, direction=CW):
-        self._lgr.debug('direction=%s', direction)
-
-        self.cur_i += direction
-
-        if self.cur_i < 0:
-            self.cur_i = len(self.seq) - 1
-        if self.cur_i >= len(self.seq):
-            self.cur_i = 0
+        self.pi.write(self.pin[0], val[0])
+        self.pi.write(self.pin[1], val[1])
+        self.pi.write(self.pin[2], val[2])
+        self.pi.write(self.pin[3], val[3])
 
     def move1(self, direction=CW):
-        self._lgr.debug('direction=%s', direction)
+        self._log.debug('direction=%s', direction)
 
         self.write(self.seq[self.cur_i])
-        self.next_step(direction)
+        self.cur_i = (self.cur_i + direction) % len(self.seq)
 
     def move(self, count=0, direction=CW):
-        self._lgr.debug('count=%s, direction=%s', count, direction)
+        self._log.debug('count=%s, direction=%s', count, direction)
 
         self.active = True
 
         counter = 0
-        while True:
+        while self.active:
             self.move1(direction)
             counter += 1
             if count > 0 and counter >= count:
@@ -103,38 +96,39 @@ class StepperMotor(threading.Thread):
             time.sleep(self.interval)
 
         self.stop()
+        self.active = False
 
 
 class App:
-    DEF_INTERVAL = 0.5  # sec
-    
+    DEF_INTERVAL = 0.003  # sec
+
     def __init__(self, pin1, pin2, pin3, pin4, interval=DEF_INTERVAL,
                  ccw=False,
                  count=0,
                  debug=False):
         self._debug = debug
-        self._lgr = get_logger(__class__.__name__, self._debug)
-        self._lgr.debug('pin1,pin2,pin3,pin4=%s,%s,%s,%s',
+        self._log = get_logger(__class__.__name__, self._debug)
+        self._log.debug('pin1,pin2,pin3,pin4=%s,%s,%s,%s',
                         pin1, pin2, pin3, pin4)
-        self._lgr.debug('interval=%s, count=%s', interval, count)
+        self._log.debug('interval=%s, ccw=%s, count=%s', interval, ccw, count)
 
         self.interval = interval
         if ccw:
             self.direction = StepperMotor.CCW
         else:
             self.direction = StepperMotor.CW
-            
-        self.count= count
+
+        self.count = count
 
         self.sm = StepperMotor(pin1, pin2, pin3, pin4, self.interval,
                                debug=debug)
 
     def main(self):
-        self._lgr.debug('')
+        self._log.debug('')
         self.sm.move(count=self.count, direction=self.direction)
-        
+
     def end(self):
-        self._lgr.debug('')
+        self._log.debug('')
         self.sm.end()
 
 
@@ -149,7 +143,7 @@ StepperMotor class
 @click.argument('pin2', type=int)
 @click.argument('pin3', type=int)
 @click.argument('pin4', type=int)
-@click.option('--interval', '-i', 'interval', type=float, default=0.0,
+@click.option('--interval', '-i', 'interval', type=float, default=App.DEF_INTERVAL,
               help='interval sec')
 @click.option('--ccw', 'ccw', is_flag=True, default=False,
               help='direction CCW')
