@@ -2,7 +2,13 @@
 
 ステッピングモーター(stepper motor)ライブラリ
 
-## 1. Raspberry Pi + DRV8835 + 28BYJ-48
+* 本体: Raspberry Pi
+* モータードライバー: DRV8835
+* ステッピングモーター: 28BYJ-48-5V
+* 言語: Python3
+* GPIO制御ライブラリ: pigpio(pigpiod)
+
+## 1. Raspberry Pi + DRV8835 + 28BYJ-48-5V
 
 配線と、引数の順番の違いに注意！
 
@@ -39,7 +45,7 @@ $ git clone https::/github.com/ytani01/StepperMotor.git
 (env1)$ pip3 install -r requirements.txt
 ```
 
-## 2. Sample
+## 3. Sample
 
 see usage as follows:
 ```bash
@@ -49,3 +55,8 @@ $ . ~/env1/bin/activate
 (env1)$ ./StepperMotor.py -h
 ```
 
+## A. Links
+
+* [DRV8835](https://akizukidenshi.com/catalog/g/gK-09848/)
+* [28BYJ-48-5V and ULN2003 5個セット](https://www.amazon.co.jp/gp/product/B010RYH74U/)
+* [pygpio -- Python Interface](http://abyz.me.uk/rpi/pigpio/python.html)
