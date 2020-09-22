@@ -4,8 +4,8 @@
 
 ## 1. wiring stepper motor to Raspberry Pi
 
-![](doc/DRY8835-28BYJ-01.png)
-![](doc/DRY8835-28BYJ-01a.png)
+![](doc/DRV8835-28BYJ-01.png)
+![](doc/DRV8835-28BYJ-01a.png)
 
 ## 2. install
 
