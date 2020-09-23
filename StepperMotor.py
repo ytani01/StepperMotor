@@ -110,7 +110,7 @@ class StepMtr(threading.Thread):
             self.seq = seq
 
         self._log.info('interval=%s, count=%s, direction=%s, seq=%s',
-                       interval, count, direction, seq)
+                       self.interval, self.count, self.direction, self.seq)
 
         self.active = True
 
@@ -192,6 +192,7 @@ class Sample:
                 self.sm.interval = self.interval
                 self.sm.direction = self.direction
                 self.sm.seq = self.seq
+
             else:
                 if sm_th is not None:
                     self._log.info('stop thread ..')
@@ -203,7 +204,7 @@ class Sample:
                 self.sm.move(self.interval, self.count, self.direction,
                              self.seq)
 
-            line1 = input('[count >0|interval[sec] <1|cw|ccw|wave|full|half] ')
+            line1 = input('[continuous=0|count>0|interval[sec]<1|cw|ccw|wave|full|half]')
             self._log.debug('line1=%a', line1)
             if len(line1) == 0:
                 break
@@ -227,16 +228,22 @@ class Sample:
                 self._log.warning('num=%s ??', num)
                 continue
 
-            if num == 0:
-                th_mode = True
-                continue
+            # num >= 0
 
-            if num < 1:
+            if 0 < num < 1:
                 self.interval = num
                 self._log.info('interval=%s', self.interval)
                 continue
 
-            # num > 0
+            self.sm.count = self.count = int(num)
+
+            if self.count == 0:
+                # continuous
+                th_mode = True
+                continue
+
+            # self.count >= 1
+
             th_mode = False
             self.count = int(num)
             self._log.info('count=%s', self.count)
