@@ -8,14 +8,17 @@ __author__ = 'Yoichi Tanibayashi'
 __date__   = '2019'
 
 import pigpio
+import threading
 import time
 
 from MyLogger import get_logger
 
 
-class StepperMotor:
+class StepMtr(threading.Thread):
     CW = 1
     CCW = -1
+
+    DEF_INTERVAL = 0.005  # sec
 
     SEQ_WAVE = [[1, 0, 0, 0],
                 [0, 1, 0, 0],
@@ -36,17 +39,25 @@ class StepperMotor:
                 [0, 0, 1, 1],
                 [0, 0, 0, 1]]
 
-
-    def __init__(self, pin1, pin2, pin3, pin4, seq=SEQ_WAVE, pi=None,
+    def __init__(self, pin1, pin2, pin3, pin4,
+                 seq=SEQ_WAVE,
+                 interval=DEF_INTERVAL,
+                 count=0,
+                 direction=CW,
+                 pi=None,
                  debug=False):
         self._dbg = debug
         self._log = get_logger(__class__.__name__, self._dbg)
         self._log.debug('pin1,pin2,pin3,pin4=%s,%s,%s,%s',
                         pin1, pin2, pin3, pin4)
-        self._log.debug('seq=%s, pi=%s', seq, pi)
+        self._log.debug('seq=%s, interval=%s, count=%s, direction=%s, pi=%s',
+                        seq, interval, count, direction, pi)
 
         self.pin = (pin1, pin2, pin3, pin4)
         self.seq = seq
+        self.interval = interval
+        self.direction = direction
+        self.count = count
 
         self.pin_n = len(self.pin)
 
@@ -60,17 +71,13 @@ class StepperMotor:
             self.pi.set_mode(self.pin[i], pigpio.OUTPUT)
             self.pi.write(self.pin[i], 0)
 
-        self.cur_i = 0
-
     def end(self):
-        self._log.debug('')
+        self.active = False
         self.stop()
         if self.mypi:
             self.pi.stop()
 
-    def stop(self):
-        self._log.debug('')
-        self.write([0, 0, 0, 0])
+        self._log.info('done')
 
     def write(self, val):
         self._log.debug('val=%s', val)
@@ -80,38 +87,69 @@ class StepperMotor:
         self.pi.write(self.pin[2], val[2])
         self.pi.write(self.pin[3], val[3])
 
-    def move1(self, direction=CW):
-        self._log.debug('direction=%s', direction)
+    def stop(self):
+        self._log.debug('')
+        self.active = False
+        self.write([0, 0, 0, 0])
+        time.sleep(1)
 
-        self.write(self.seq[self.cur_i])
-        self.cur_i = (self.cur_i + direction) % len(self.seq)
+    def move(self, interval=None, count=None, direction=None, seq=None):
+        self._log.debug('interval=%s, count=%s, direction=%s, seq=%s',
+                        interval, count, direction, seq)
 
-    def move(self, interval, count=0, direction=CW):
-        self._log.debug('count=%s, direction=%s', count, direction)
+        if interval is not None:
+            self.interval = interval
+
+        if count is not None:
+            self.count = count
+
+        if direction is not None:
+            self.direction = direction
+
+        if seq is not None:
+            self.seq = seq
+
+        self._log.info('interval=%s, count=%s, direction=%s, seq=%s',
+                       interval, count, direction, seq)
 
         self.active = True
 
+        seq_i = 0
+
         counter = 0
         while self.active:
-            self.move1(direction)
+            self.write(self.seq[seq_i])
+            seq_i = (seq_i + self.direction) % len(self.seq)
             counter += 1
-            if count > 0 and counter >= count:
+
+            if self.count > 0 and counter >= self.count:
                 break
 
-            time.sleep(interval)
+            time.sleep(self.interval)
 
         self.stop()
-        self.active = False
+
+
+class StepMtrThread(threading.Thread):
+    def __init__(self):
+        super().__init__()
+        self.setDaemon(True)
+
+    def run(self):
+        self._log.debug('')
+        self.move(self.interval)
 
 
 class Sample:
-    DEF_INTERVAL = 0.005  # sec
-    SEQ = {'wave': StepperMotor.SEQ_WAVE,
-           'full': StepperMotor.SEQ_FULL,
-           'half': StepperMotor.SEQ_HALF}
+    SEQ = {'wave': StepMtr.SEQ_WAVE,
+           'full': StepMtr.SEQ_FULL,
+           'half': StepMtr.SEQ_HALF}
+
+    DIRECTION = {'cw': StepMtr.CW,
+                 'ccw': StepMtr.CCW}
 
     def __init__(self, pin1, pin2, pin3, pin4,
-                 interval=DEF_INTERVAL,
+                 interval=StepMtr.DEF_INTERVAL,
                  ccw=False,
                  count=0,
                  seq=SEQ['wave'],
@@ -124,20 +162,82 @@ class Sample:
                         interval, ccw, count, seq)
 
         self.interval = interval
-        if ccw:
-            self.direction = StepperMotor.CCW
-        else:
-            self.direction = StepperMotor.CW
-
         self.count = count
         self.seq = self.SEQ[seq]
+        if ccw:
+            self.direction = StepMtr.CCW
+        else:
+            self.direction = StepMtr.CW
 
-        self.sm = StepperMotor(pin1, pin2, pin3, pin4, seq=self.seq,
-                               debug=self._dbg)
+        self.sm = StepMtr(pin1, pin2, pin3, pin4, seq=self.seq,
+                          debug=self._dbg)
 
     def main(self):
         self._log.debug('')
-        self.sm.move(self.interval, count=self.count, direction=self.direction)
+
+        th_mode = False
+        sm_th = None
+
+        while True:
+            if th_mode:
+                if sm_th is None:
+                    sm_th = threading.Thread(target=self.sm.move)
+                    sm_th.setDaemon(True)
+                    sm_th.start()
+
+                self.sm.count = self.count = 0
+                self.sm.interval = self.interval
+                self.sm.direction = self.direction
+                self.sm.seq = self.seq
+            else:
+                if sm_th is not None:
+                    self._log.info('stop thread ..')
+                    self.sm.stop()
+                    sm_th.join()
+                    sm_th = None
+                    self._log.info('stop thread .. done')
+
+                    self.count = 1
+                    
+                self.sm.move(self.interval, self.count, self.direction,
+                             self.seq)
+
+            line1 = input('[count >0|interval[sec] <1|cw|ccw|wave|full|half] ')
+            self._log.info('line1=%a', line1)
+            if len(line1) == 0:
+                break
+
+            if line1 == 'cw' or line1 == 'ccw':
+                self.direction = self.DIRECTION[line1]
+                self._log.info('direction=%s', self.direction)
+                continue
+
+            if line1 == 'wave' or line1 == 'full' or line1 == 'half':
+                self.seq = self.SEQ[line1]
+                continue
+
+            try:
+                num = float(line1)
+            except Exception as e:
+                self._log.error('invalid command: %a', line1)
+                continue
+
+            if num < 0:
+                self._log.warning('num=%s ??', num)
+                continue
+
+            if num == 0:
+                th_mode = True
+                continue
+
+            if num < 1:
+                self.interval = num
+                self._log.info('interval=%s', self.interval)
+                continue
+
+            th_mode = False
+            self.count = int(num)
+            self._log.info('count=%s', self.count)
 
     def end(self):
         self._log.debug('')
@@ -149,18 +249,18 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 
 @click.command(context_settings=CONTEXT_SETTINGS, help="""
-StepperMotor class
+StepMtr class
 """)
 @click.argument('pin1', type=int)
 @click.argument('pin2', type=int)
 @click.argument('pin3', type=int)
 @click.argument('pin4', type=int)
 @click.option('--interval', '-i', 'interval', type=float,
-              default=Sample.DEF_INTERVAL,
+              default=StepMtr.DEF_INTERVAL,
               help='interval sec')
 @click.option('--ccw', 'ccw', is_flag=True, default=False,
               help='direction CCW')
-@click.option('--count', '-c', 'count', type=int, default=0,
+@click.option('--count', '-c', 'count', type=int, default=1,
               help='count')
 @click.option('--seq', '-s', 'seq', type=str, default="wave",
               help='drive sequence')
@@ -172,9 +272,8 @@ def main(pin1, pin2, pin3, pin4, interval, ccw, count, seq, debug):
     log.debug('interval=%s, ccw=%s, count=%s, seq=%s',
               interval, ccw, count, seq)
 
-    log.info('start')
-
-    app = Sample(pin1, pin2, pin3, pin4, interval, ccw, count, seq, debug=debug)
+    app = Sample(pin1, pin2, pin3, pin4, interval, ccw, count, seq,
+                 debug=debug)
 
     try:
         app.main()
