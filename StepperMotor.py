@@ -91,7 +91,7 @@ class StepMtr(threading.Thread):
         self._log.debug('')
         self.active = False
         self.write([0, 0, 0, 0])
-        time.sleep(1)
+        time.sleep(0.5)  # Important!
 
     def move(self, interval=None, count=None, direction=None, seq=None):
         self._log.debug('interval=%s, count=%s, direction=%s, seq=%s',
@@ -131,6 +131,9 @@ class StepMtr(threading.Thread):
 
 
 class StepMtrThread(threading.Thread):
+    """
+    TBD
+    """
     def __init__(self):
         super().__init__()
         self.setDaemon(True)
@@ -197,13 +200,11 @@ class Sample:
                     sm_th = None
                     self._log.info('stop thread .. done')
 
-                    self.count = 1
-                    
                 self.sm.move(self.interval, self.count, self.direction,
                              self.seq)
 
             line1 = input('[count >0|interval[sec] <1|cw|ccw|wave|full|half] ')
-            self._log.info('line1=%a', line1)
+            self._log.debug('line1=%a', line1)
             if len(line1) == 0:
                 break
 
@@ -235,6 +236,7 @@ class Sample:
                 self._log.info('interval=%s', self.interval)
                 continue
 
+            # num > 0
             th_mode = False
             self.count = int(num)
             self._log.info('count=%s', self.count)
