@@ -118,6 +118,10 @@ class StepMtr(threading.Thread):
 
         counter = 0
         while self.active:
+            if seq_i >= len(self.seq):
+                # sequence is changed by main routine
+                seq_i = 0
+
             self.write(self.seq[seq_i])
             seq_i = (seq_i + self.direction) % len(self.seq)
             counter += 1
