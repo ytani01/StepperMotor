@@ -17,6 +17,20 @@
 
 ## 2. install
 
+## 2.0 TL;DR
+
+```bash
+$ cd ~
+$ python3 -m venv env1
+$ cd env1
+$ . ./bin/activate
+(env1)$ git clone https://github.com/ytani01/StepperMotor.git
+(env1)$ cd StepperMotor
+(env1)$ pip3 install -r requirements.txt
+(env1)$ sudo pigpiod
+(env1)$ ./StepperMotor.py -h
+```
+
 ### 2.1 create python3 venv
 
 ```bash
