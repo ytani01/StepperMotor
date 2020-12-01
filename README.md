@@ -3,17 +3,30 @@
 ステッピングモーター(stepper motor)ライブラリ
 
 * 本体: Raspberry Pi
-* モータードライバー: DRV8835
+* モータードライバー: DRV8835, ULN2003
 * ステッピングモーター: 28BYJ-48-5V
 * 言語: Python3
 * GPIO制御ライブラリ: pigpio(pigpiod)
 
-## 1. Raspberry Pi + DRV8835 + 28BYJ-48-5V
+## 1. Hardware
+
+### 1.1 Raspberry Pi + DRV8835 + 28BYJ-48-5V
 
 配線と、引数の順番の違いに注意！
 
 ![](doc/DRV8835-28BYJ-01.png)
 ![](doc/DRV8835-28BYJ-01a.png)
+
+### 1.2 ULN2003モジュールの場合
+
+```
+AIN1 -> IN1
+AIN2 -> IN2
+BIN1 -> IN3
+BIN2 -> IN4
+```
+
+![](doc/ULN2003-module.jpg)
 
 ## 2. install
 
