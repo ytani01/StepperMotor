@@ -5,16 +5,15 @@
 """
 """
 __author__ = 'Yoichi Tanibayashi'
-__date__   = '2019'
+__date__   = '2020/12'
 
 import pigpio
-import threading
 import time
 
 from MyLogger import get_logger
 
 
-class StepMtr(threading.Thread):
+class StepMtr:
     CW = 1
     CCW = -1
 
@@ -50,7 +49,7 @@ class StepMtr(threading.Thread):
         self._log = get_logger(__class__.__name__, self._dbg)
         self._log.debug('pin1,pin2,pin3,pin4=%s,%s,%s,%s',
                         pin1, pin2, pin3, pin4)
-        self._log.debug('seq=%s, interval=%s, count=%s, direction=%s, pi=%s',
+        self._log.debug('seq=%s,interval=%s,count=%s,direction=%s,pi=%s',
                         seq, interval, count, direction, pi)
 
         self.pin = (pin1, pin2, pin3, pin4)
@@ -70,6 +69,8 @@ class StepMtr(threading.Thread):
         for i in range(self.pin_n):
             self.pi.set_mode(self.pin[i], pigpio.OUTPUT)
             self.pi.write(self.pin[i], 0)
+
+        self.active = False
 
     def end(self):
         self.active = False
@@ -110,7 +111,8 @@ class StepMtr(threading.Thread):
             self.seq = seq
 
         self._log.info('interval=%s, count=%s, direction=%s, seq=%s',
-                       self.interval, self.count, self.direction, self.seq)
+                       self.interval, self.count, self.direction,
+                       self.seq)
 
         self.active = True
 
@@ -122,29 +124,16 @@ class StepMtr(threading.Thread):
                 # sequence is changed by main routine
                 seq_i = 0
 
+            if self.count >= 0 and counter >= self.count:
+                break
+
             self.write(self.seq[seq_i])
             seq_i = (seq_i + self.direction) % len(self.seq)
             counter += 1
 
-            if self.count > 0 and counter >= self.count:
-                break
-
             time.sleep(self.interval)
 
         self.stop()
-
-
-class StepMtrThread(threading.Thread):
-    """
-    TBD
-    """
-    def __init__(self):
-        super().__init__()
-        self.setDaemon(True)
-
-    def run(self):
-        self._log.debug('')
-        self.move(self.interval)
 
 
 class Sample:
@@ -155,75 +144,40 @@ class Sample:
     DIRECTION = {'cw': StepMtr.CW,
                  'ccw': StepMtr.CCW}
 
-    def __init__(self, pin1, pin2, pin3, pin4,
-                 interval=StepMtr.DEF_INTERVAL,
-                 ccw=False,
-                 count=0,
-                 seq=SEQ['wave'],
-                 debug=False):
+    def __init__(self, pin1, pin2, pin3, pin4, debug=False):
         self._dbg = debug
         self._log = get_logger(__class__.__name__, self._dbg)
         self._log.debug('pin1,pin2,pin3,pin4=%s,%s,%s,%s',
                         pin1, pin2, pin3, pin4)
-        self._log.debug('interval=%s, ccw=%s, count=%s, seq=%s',
-                        interval, ccw, count, seq)
 
-        self.interval = interval
-        self.count = count
-        self.seq = self.SEQ[seq]
-        if ccw:
-            self.direction = StepMtr.CCW
-        else:
-            self.direction = StepMtr.CW
-
-        self.sm = StepMtr(pin1, pin2, pin3, pin4, seq=self.seq,
+        self.sm = StepMtr(pin1, pin2, pin3, pin4,
                           debug=self._dbg)
 
     def main(self):
         self._log.debug('')
 
-        th_mode = False
-        sm_th = None
-
         while True:
-            if th_mode:
-                if sm_th is None:
-                    sm_th = threading.Thread(target=self.sm.move)
-                    sm_th.setDaemon(True)
-                    sm_th.start()
+            self._log.info('moving ..')
+            self.sm.move()
 
-                self.sm.count = self.count = 0
-                self.sm.interval = self.interval
-                self.sm.direction = self.direction
-                self.sm.seq = self.seq
-
-            else:
-                if sm_th is not None:
-                    self._log.info('stop thread ..')
-                    self.sm.stop()
-                    sm_th.join()
-                    sm_th = None
-                    self._log.info('stop thread .. done')
-
-                self.sm.move(self.interval, self.count, self.direction,
-                             self.seq)
-
-            prompt = '[continuous=0|count>0'
-            prompt += '|interval[sec]<1'
-            prompt += '|cw|ccw|wave|full|half'
-            prompt += '] '
+            prompt = '[0<=count'
+            prompt += '|0<interval[sec]<1'
+            prompt += '|cw|ccw'
+            prompt += '|wave|full|half'
+            prompt += 'NULL=end] '
             line1 = input(prompt)
             self._log.debug('line1=%a', line1)
             if len(line1) == 0:
                 break
 
             if line1 == 'cw' or line1 == 'ccw':
-                self.direction = self.DIRECTION[line1]
-                self._log.info('direction=%s', self.direction)
+                self.sm.direction = self.DIRECTION[line1]
+                self._log.info('direction=%s', self.sm.direction)
                 continue
 
             if line1 == 'wave' or line1 == 'full' or line1 == 'half':
-                self.seq = self.SEQ[line1]
+                self.sm.seq = self.SEQ[line1]
+                self._log.info('seq=%s', self.sm.seq)
                 continue
 
             try:
@@ -232,29 +186,16 @@ class Sample:
                 self._log.error('invalid command: %a', line1)
                 continue
 
-            if num < 0:
-                self._log.warning('num=%s ??', num)
-                continue
-
-            # num >= 0
-
             if 0 < num < 1:
-                self.interval = num
-                self._log.info('interval=%s', self.interval)
+                self.sm.interval = num
+                self._log.info('interval=%s', self.sm.interval)
                 continue
 
-            self.sm.count = self.count = int(num)
+            self.sm.count = int(num)
+            self._log.info('count=%s', self.sm.count)
 
-            if self.count == 0:
-                # continuous
-                th_mode = True
-                continue
-
-            # self.count >= 1
-
-            th_mode = False
-            self.count = int(num)
-            self._log.info('count=%s', self.count)
+            if self.sm.count < 0:
+                self._log.warning('move forever .. Ctrl-C to stop')
 
     def end(self):
         self._log.debug('')
@@ -272,25 +213,13 @@ StepMtr class
 @click.argument('pin2', type=int)
 @click.argument('pin3', type=int)
 @click.argument('pin4', type=int)
-@click.option('--interval', '-i', 'interval', type=float,
-              default=StepMtr.DEF_INTERVAL,
-              help='interval sec')
-@click.option('--ccw', 'ccw', is_flag=True, default=False,
-              help='direction CCW')
-@click.option('--count', '-c', 'count', type=int, default=1,
-              help='count')
-@click.option('--seq', '-s', 'seq', type=str, default="wave",
-              help='drive sequence')
 @click.option('--debug', '-d', 'debug', is_flag=True, default=False,
               help='debug flag')
-def main(pin1, pin2, pin3, pin4, interval, ccw, count, seq, debug):
+def main(pin1, pin2, pin3, pin4, debug):
     log = get_logger(__name__, debug)
     log.debug('(pin1, pin2, pin3, pin4)=%s', (pin1, pin2, pin3, pin4))
-    log.debug('interval=%s, ccw=%s, count=%s, seq=%s',
-              interval, ccw, count, seq)
 
-    app = Sample(pin1, pin2, pin3, pin4, interval, ccw, count, seq,
-                 debug=debug)
+    app = Sample(pin1, pin2, pin3, pin4, debug=debug)
 
     try:
         app.main()

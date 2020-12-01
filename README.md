@@ -1,12 +1,23 @@
-# StepperMotor.py
+# Stepper Motor Class for Python3 and pigpio
 
-ステッピングモーター(stepper motor)ライブラリ
+ステッピングモーター(stepper motor) Python3ライブラリ
 
 * 本体: Raspberry Pi
 * モータードライバー: DRV8835, ULN2003
 * ステッピングモーター: 28BYJ-48-5V
 * プログラミング言語: Python3
 * GPIO制御ライブラリ: pigpio(pigpiod)
+
+### StepMtr
+
+* シングルスレッド版
+* 指定されたカウントまでブロックし、他の操作ができない。
+
+### StepMtrTh
+
+* マルチスレッド版
+* 回転中でも制御可能。
+
 
 ## 1. Hardware
 
@@ -41,7 +52,8 @@ $ . ./bin/activate
 (env1)$ cd StepperMotor
 (env1)$ pip3 install -r requirements.txt
 (env1)$ sudo pigpiod
-(env1)$ ./StepperMotor.py -h
+(env1)$ ./StepMtr.py -h
+(env1)$ ./StepMtrTh.py
 ```
 
 ### 2.1 create python3 venv
@@ -79,14 +91,11 @@ see usage as follows:
 $ sudo pigpiod
 $ . ~/env1/bin/activate
 (env1)$ cd ~/env1/StepperMotor
-(env1)$ ./StepperMotor.py -h
+(env1)$ ./StepMtr.py -h
+(env1)$ ./stepMtrTh.py -h
 ```
 
-## 4. ``StepMtr`` Class References
-
-
-TBD
-
+## 4. Class References
 
 ## A. Links
 
