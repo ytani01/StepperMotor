@@ -82,7 +82,7 @@ $ . ~/env1/bin/activate
 (env1)$ ./StepperMotor.py -h
 ```
 
-## 4. ``StepMtr``Class References
+## 4. ``StepMtr`` Class References
 
 
 TBD
