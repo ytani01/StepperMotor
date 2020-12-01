@@ -5,7 +5,7 @@
 * 本体: Raspberry Pi
 * モータードライバー: DRV8835, ULN2003
 * ステッピングモーター: 28BYJ-48-5V
-* 言語: Python3
+* プログラミング言語: Python3
 * GPIO制御ライブラリ: pigpio(pigpiod)
 
 ## 1. Hardware
@@ -28,7 +28,7 @@ BIN2 -> IN4
 
 ![](doc/ULN2003-module.jpg)
 
-## 2. install
+## 2. Software
 
 ## 2.0 TL;DR
 
@@ -81,6 +81,12 @@ $ . ~/env1/bin/activate
 (env1)$ cd ~/env1/StepperMotor
 (env1)$ ./StepperMotor.py -h
 ```
+
+## 4. ``StepMtr``Class References
+
+
+TBD
+
 
 ## A. Links
 
