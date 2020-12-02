@@ -62,12 +62,12 @@ BIN2 -> IN4
 ### 2.0 Architecture
 
 |呼び出し階層|
-|---------|
-|StepMtrTh|
-|---------|
-| StepMtr |
-|---------|
-| pigpio  |
+|------------|
+| StepMtrTh  |
+|------------|
+|  StepMtr   |
+|------------|
+|  pigpio    |
 
 ### 2.1 create python3 venv
 
