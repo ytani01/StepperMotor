@@ -64,9 +64,7 @@ BIN2 -> IN4
 |呼び出し階層|
 |------------|
 | StepMtrTh  |
-|------------|
 |  StepMtr   |
-|------------|
 |  pigpio    |
 
 ### 2.1 create python3 venv
