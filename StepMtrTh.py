@@ -66,9 +66,9 @@ class StepMtrTh:
                         interval, count, direction)
         self._log.debug('pi=%s', pi)
 
-        self.sm = StepMtr(pin1, pin2, pin3, pin4,
-                          seq, interval, count, direction, pi,
-                          debug=self._dbg)
+        self.mtr = StepMtr(pin1, pin2, pin3, pin4,
+                           seq, interval, count, direction, pi,
+                           debug=self._dbg)
 
         self.worker = None
 
@@ -77,7 +77,7 @@ class StepMtrTh:
         """
         self._log.debug('count=%s', count)
 
-        self.sm.count = count
+        self.mtr.count = count
         self.start()
 
     def set_interval(self, interval):
@@ -85,7 +85,7 @@ class StepMtrTh:
         """
         self._log.debug('interval=%s', interval)
 
-        self.sm.interval = interval
+        self.mtr.interval = interval
         self.start()
 
     def set_direction(self, direction):
@@ -93,7 +93,7 @@ class StepMtrTh:
         """
         self._log.debug('direction=%s', direction)
 
-        self.sm.direction = direction
+        self.mtr.direction = direction
         self.start()
 
     def set_seq(self, seq):
@@ -101,7 +101,7 @@ class StepMtrTh:
         """
         self._log.debug('seq=%s', seq)
 
-        self.sm.seq = seq
+        self.mtr.seq = seq
         self.start()
 
     def start(self):
@@ -115,7 +115,7 @@ class StepMtrTh:
         self.stop()
 
         # start thread
-        self.worker = threading.Thread(target=self.sm.move)
+        self.worker = threading.Thread(target=self.mtr.move)
         self.worker.setDaemon(True)
         self.worker.start()
 
@@ -128,7 +128,7 @@ class StepMtrTh:
 
         if self.worker is not None:
             self._log.debug('stopping thread ..')
-            self.sm.stop()
+            self.mtr.stop()
             self.worker.join()
             self.worker = None
             self._log.debug('stopping thread .. done')
@@ -140,6 +140,7 @@ class StepMtrTh:
         """
         self._log.debug('doing ..')
         self.stop()
+        self.mtr.end()
         self._log.debug('done')
 
 
@@ -164,13 +165,13 @@ class Sample:
         self._log.debug('pins=%s', (pin1, pin2, pin3, pin4))
 
         # ``StepMtrTh``オブジェクト作成
-        self.smt = StepMtrTh(pin1, pin2, pin3, pin4, debug=self._dbg)
+        self.mtr = StepMtrTh(pin1, pin2, pin3, pin4, debug=self._dbg)
 
     def main(self):
         self._log.debug('')
 
         # スタート
-        self.smt.start()
+        self.mtr.start()
 
         while True:
             prompt = '[0<=count|0>continuous'
@@ -189,14 +190,14 @@ class Sample:
                 direction = self.DIRECTION[line1]
                 self._log.info('direction=%s', direction)
 
-                self.smt.set_direction(direction)
+                self.mtr.set_direction(direction)
                 continue
 
             if line1 == 'wave' or line1 == 'full' or line1 == 'half':
                 seq = self.SEQ[line1]
                 self._log.info('seq=%s', seq)
 
-                self.smt.set_seq(seq)
+                self.mtr.set_seq(seq)
                 continue
 
             try:
@@ -209,17 +210,17 @@ class Sample:
                 interval = num
                 self._log.info('interval=%s', interval)
 
-                self.smt.set_interval(interval)
+                self.mtr.set_interval(interval)
                 continue
 
             self.count = int(num)
             self._log.info('count=%s', self.count)
 
-            self.smt.set_count(self.count)
+            self.mtr.set_count(self.count)
 
     def end(self):
         self._log.debug('')
-        self.smt.end()
+        self.mtr.end()
 
 
 import click
