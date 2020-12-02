@@ -2,21 +2,39 @@
 
 ステッピングモーター(stepper motor) Python3ライブラリ
 
-* 本体: Raspberry Pi
-* モータードライバー: DRV8835, ULN2003
-* ステッピングモーター: 28BYJ-48-5V
-* プログラミング言語: Python3
-* GPIO制御ライブラリ: pigpio(pigpiod)
-
-### StepMtr
+## StepMtr
 
 * シングルスレッド版
 * 指定されたカウントまでブロックし、他の操作ができない。
 
-### StepMtrTh
+## StepMtrTh
 
 * マルチスレッド版
 * 回転中でも制御可能。
+
+
+## 0. TL;DR
+
+```bash
+$ cd ~
+$ python3 -m venv env1
+$ cd env1
+$ . ./bin/activate
+(env1)$ git clone https://github.com/ytani01/StepperMotor.git
+(env1)$ cd StepperMotor
+(env1)$ pip3 install -r requirements.txt
+(env1)$ sudo pigpiod
+(env1)$ ./StepMtr.py -h
+(env1)$ ./StepMtrTh.py
+```
+
+## 動作環境
+
+* 本体: Raspberry Pi
+* モータードライバー: DRV8835, ULN2003
+* ステッピングモーター: 28BYJ-48-5V
+* プログラミング言語: Python3
+* GPIO制御ライブラリ: pigpio
 
 
 ## 1. Hardware
@@ -41,20 +59,12 @@ BIN2 -> IN4
 
 ## 2. Software
 
-## 2.0 TL;DR
+### 2.0 Architecture
 
-```bash
-$ cd ~
-$ python3 -m venv env1
-$ cd env1
-$ . ./bin/activate
-(env1)$ git clone https://github.com/ytani01/StepperMotor.git
-(env1)$ cd StepperMotor
-(env1)$ pip3 install -r requirements.txt
-(env1)$ sudo pigpiod
-(env1)$ ./StepMtr.py -h
-(env1)$ ./StepMtrTh.py
-```
+|StepMtrTh|
+|---------|
+| StepMtr |
+
 
 ### 2.1 create python3 venv
 

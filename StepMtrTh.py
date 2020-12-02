@@ -3,6 +3,7 @@
 # (c) 2020 Yoichi Tanibayashi
 #
 """
+ステッピングモーター制御: マルチスレッド版
 """
 __author__ = 'Yoichi Tanibayashi'
 __date__   = '2020/12'
@@ -14,6 +15,21 @@ from MyLogger import get_logger
 
 
 class StepMtrTh:
+    """ステッピングモーター制御: マルチスレッド版
+
+    ``start()``で動作を開始し、
+    ``stop()``で途中で停止することができる。
+
+    動作中に回転方向、速度などを変更することもできる。
+
+    Attributes
+    ----------
+    sm: StepMtr
+        ステッピングモーター(シングルスレッド版)オブジェクト
+    worker: threading.Thread
+        ワーカー・スレッド
+    """
+
     def __init__(self, pin1, pin2, pin3, pin4,
                  seq=StepMtr.SEQ_WAVE,
                  interval=StepMtr.DEF_INTERVAL,
@@ -21,13 +37,34 @@ class StepMtrTh:
                  direction=StepMtr.CW,
                  pi=None,
                  debug=False):
+        """コンストラクタ
+
+        Parameters
+        ----------
+        pin1, pin2, pin3, pin4: int
+            GPIOピン番号
+        seq: list, default StepMtr.SEQ_WAVE
+            信号パターンリスト
+        interval: float, default StepMtr.DEF_INTERVAL
+            ステップの間隔(sec)
+        count: int, default 0
+            ステップ数
+            < 0: 連続回転
+        direction: int, default StepMtr.CW
+            回転方向
+            StepMtr.CW | StepMtr.CCW
+        pi: pigpio.pi
+            pigpioオブジェクト
+        debug: bool
+            デバッグフラグ
+        """
         self._dbg = debug
         self._log = get_logger(__class__.__name__, self._dbg)
-        self._log.debug('pin1,pin2,pin3,pin4=%s,%s,%s,%s',
-                        pin1, pin2, pin3, pin4)
-
-        self._log.debug('seq=%s,interval=%s,count=%s,direction=%s,pi=%s',
-                        seq, interval, count, direction, pi)
+        self._log.debug('pins=%s', (pin1, pin2, pin3, pin4))
+        self._log.debug('seq=%s', seq)
+        self._log.debug('interval=%s, count=%s, direction=%s',
+                        interval, count, direction)
+        self._log.debug('pi=%s', pi)
 
         self.sm = StepMtr(pin1, pin2, pin3, pin4,
                           seq, interval, count, direction, pi,
@@ -36,40 +73,46 @@ class StepMtrTh:
         self.worker = None
 
     def set_count(self, count):
+        """
+        """
         self._log.debug('count=%s', count)
 
         self.sm.count = count
-        self.move()
+        self.start()
 
     def set_interval(self, interval):
+        """
+        """
         self._log.debug('interval=%s', interval)
 
         self.sm.interval = interval
+        self.start()
 
     def set_direction(self, direction):
+        """
+        """
         self._log.debug('direction=%s', direction)
 
         self.sm.direction = direction
-        self.move()
+        self.start()
 
     def set_seq(self, seq):
+        """
+        """
         self._log.debug('seq=%s', seq)
 
         self.sm.seq = seq
-        self.move()
+        self.start()
 
-    def move(self):
+    def start(self):
+        """スタート
+
+        内部でスレッドを起動する。
+        モーター動作中に``stop()``で停止することができる。
+        """
         self._log.debug('')
 
         self.stop()
-
-        """
-        # set params
-        self.sm.count = self.count
-        self.sm.interval = self.interval
-        self.sm.direction = self.direction
-        self.sm.seq = self.seq
-        """
 
         # start thread
         self.worker = threading.Thread(target=self.sm.move)
@@ -77,21 +120,37 @@ class StepMtrTh:
         self.worker.start()
 
     def stop(self):
+        """ストップ
+
+        モーターの動作を停止し、スレッドを削除する。
+        """
         self._log.debug('')
 
         if self.worker is not None:
-            self._log.info('stop thread ..')
+            self._log.debug('stopping thread ..')
             self.sm.stop()
             self.worker.join()
             self.worker = None
-            self._log.info('stop thread .. done')
+            self._log.debug('stopping thread .. done')
 
     def end(self):
-        self._log.debug('')
+        """終了処理
+
+        プログラム終了時に呼ぶこと
+        """
+        self._log.debug('doing ..')
         self.stop()
+        self._log.debug('done')
+
+
+"""
+以下、サンプル・コード
+"""
 
 
 class Sample:
+    """サンプル
+    """
     SEQ = {'wave': StepMtr.SEQ_WAVE,
            'full': StepMtr.SEQ_FULL,
            'half': StepMtr.SEQ_HALF}
@@ -102,20 +161,16 @@ class Sample:
     def __init__(self, pin1, pin2, pin3, pin4, debug=False):
         self._dbg = debug
         self._log = get_logger(__class__.__name__, self._dbg)
-        self._log.debug('pin1,pin2,pin3,pin4=%s,%s,%s,%s',
-                        pin1, pin2, pin3, pin4)
+        self._log.debug('pins=%s', (pin1, pin2, pin3, pin4))
 
-        self.sm_th = StepMtrTh(pin1, pin2, pin3, pin4,
-                               StepMtr.SEQ_WAVE,
-                               StepMtr.DEF_INTERVAL,
-                               0,
-                               StepMtr.CW,
-                               debug=self._dbg)
+        # ``StepMtrTh``オブジェクト作成
+        self.smt = StepMtrTh(pin1, pin2, pin3, pin4, debug=self._dbg)
 
     def main(self):
         self._log.debug('')
 
-        self.sm_th.move()
+        # スタート
+        self.smt.start()
 
         while True:
             prompt = '[0<=count|0>continuous'
@@ -134,14 +189,14 @@ class Sample:
                 direction = self.DIRECTION[line1]
                 self._log.info('direction=%s', direction)
 
-                self.sm_th.set_direction(direction)
+                self.smt.set_direction(direction)
                 continue
 
             if line1 == 'wave' or line1 == 'full' or line1 == 'half':
                 seq = self.SEQ[line1]
                 self._log.info('seq=%s', seq)
 
-                self.sm_th.set_seq(seq)
+                self.smt.set_seq(seq)
                 continue
 
             try:
@@ -154,17 +209,17 @@ class Sample:
                 interval = num
                 self._log.info('interval=%s', interval)
 
-                self.sm_th.set_interval(interval)
+                self.smt.set_interval(interval)
                 continue
 
             self.count = int(num)
             self._log.info('count=%s', self.count)
 
-            self.sm_th.set_count(self.count)
+            self.smt.set_count(self.count)
 
     def end(self):
         self._log.debug('')
-        self.sm_th.end()
+        self.smt.end()
 
 
 import click
@@ -180,6 +235,8 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.option('--debug', '-d', 'debug', is_flag=True, default=False,
               help='debug flag')
 def main(pin1, pin2, pin3, pin4, debug):
+    """サンプル起動用メイン関数
+    """
     log = get_logger(__name__, debug)
     log.debug('pins=%s', (pin1, pin2, pin3, pin4))
 
