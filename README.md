@@ -61,8 +61,6 @@ BIN2 -> IN4
 
 ### 2.0 Architecture
 
-|呼び出し階層|
-|------------|
 | StepMtrTh  |
 |  StepMtr   |
 |  pigpio    |
