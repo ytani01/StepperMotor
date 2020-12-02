@@ -2,15 +2,24 @@
 
 ステッピングモーター(stepper motor) Python3ライブラリ
 
-## StepMtr
+## StepMtr class
 
 * シングルスレッド版
 * 指定されたカウントまでブロックし、他の操作ができない。
 
-## StepMtrTh
+## StepMtrTh class
 
 * マルチスレッド版
 * 回転中でも制御可能。
+
+
+## 動作環境
+
+* 本体: Raspberry Pi
+* モータードライバー: DRV8835, ULN2003
+* ステッピングモーター: 28BYJ-48-5V
+* プログラミング言語: Python3
+* GPIO制御ライブラリ: pigpio
 
 
 ## 0. TL;DR
@@ -27,15 +36,6 @@ $ . ./bin/activate
 (env1)$ ./StepMtr.py -h
 (env1)$ ./StepMtrTh.py
 ```
-
-## 動作環境
-
-* 本体: Raspberry Pi
-* モータードライバー: DRV8835, ULN2003
-* ステッピングモーター: 28BYJ-48-5V
-* プログラミング言語: Python3
-* GPIO制御ライブラリ: pigpio
-
 
 ## 1. Hardware
 
@@ -61,10 +61,12 @@ BIN2 -> IN4
 
 ### 2.0 Architecture
 
+|---------|
 |StepMtrTh|
 |---------|
 | StepMtr |
-
+|---------|
+| pigpio  |
 
 ### 2.1 create python3 venv
 
