@@ -3,6 +3,16 @@
 # (c) 2020 FabLab Kannai
 #
 """
+Rotation Motor driver for Music Box
+
+Usage
+-----
+mtr = MusicBoxRotationMotor(pin1, pin2, pin3, pin4)
+ :
+mtr.set_speed(speed)  # 0 <= speed <= 10
+ :
+mtr.end()
+-----
 """
 __author__ = 'FabLab Kannai'
 __date__   = '2020/12'
@@ -65,9 +75,7 @@ class MusicBoxRotationMotor:
         Parameters
         ----------
         speed: int
-            速度
-            0: ストップ
-            10: 最速
+            速度  0:ストップ, 10:最速
         """
         self._log.debug('speed=%s', speed)
 
@@ -81,6 +89,10 @@ class MusicBoxRotationMotor:
         self.start()
 
     def end(self):
+        """終了処理
+
+        プログラム終了時に呼ぶこと
+        """
         self._log.debug('')
         self.sm_th.end()
 
@@ -107,7 +119,7 @@ class Sample:
         self.mtr.set_speed(1)
 
         while True:
-            prompt = '[0 < speed < 10] '
+            prompt = '[0 <= speed <= 10 | NULL:end] '
             try:
                 line1 = input(prompt)
             except Exception as e:
