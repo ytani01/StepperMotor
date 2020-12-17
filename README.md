@@ -34,7 +34,7 @@ $ . ./bin/activate
 (env1)$ pip3 install -r requirements.txt
 (env1)$ sudo pigpiod
 (env1)$ ./StepMtr.py -h
-(env1)$ ./StepMtrTh.py
+(env1)$ ./StepMtrTh.py -h
 ```
 
 ## 1. Hardware
