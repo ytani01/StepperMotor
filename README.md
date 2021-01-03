@@ -43,7 +43,7 @@ $ . ./bin/activate
 Run test program
 ```bash
 (env1)$ sudo pigpiod
-(env1)$ python -m stepper_motor PIN1 PIN2 PIN3 PIN4
+(env1)$ python -m stepmtr PIN1 PIN2 PIN3 PIN4
 ```
 
 Sample program
@@ -56,8 +56,8 @@ Sample program
 
 配線と、引数の順番の違いに注意！
 
-![](doc/DRV8835-28BYJ-01.png)
-![](doc/DRV8835-28BYJ-01a.png)
+![](docs/DRV8835-28BYJ-01.png)
+![](docs/DRV8835-28BYJ-01a.png)
 
 ### 1.2 ULN2003モジュールの場合
 
@@ -68,13 +68,13 @@ BIN1 -> IN3
 BIN2 -> IN4
 ```
 
-![](doc/ULN2003-module.jpg)
+![](docs/ULN2003-module.jpg)
 
 
 ## 2. API
 
 ```bash
-$ python3 -m pydoc stepper_motor
+$ python3 -m pydoc stepmtr
 ```
 
 
