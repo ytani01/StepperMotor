@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 #
 # (c) 2019 Yoichi Tanibayashi
 #
@@ -6,17 +5,16 @@
 ステッピングモーター制御: シングルスレッド版
 """
 __author__ = 'Yoichi Tanibayashi'
-__date__   = '2020/12'
+__date__   = '2021/01'
 
 import pigpio
 import time
-
-from MyLogger import get_logger
+from .my_logger import get_logger
 
 
 class StepMtr:
     """ステッピングモーター制御: シングルスレッド版
-    
+
     ``move()``を呼ぶと指定されたステップ数の動作が終了するまで、
     戻ってこない。
     カウント数を負の値にすると連続回転し、
@@ -163,6 +161,7 @@ class StepMtr:
                 seq_i = 0
 
             if self.count >= 0 and counter >= self.count:
+                self.count = 0
                 break
 
             self.write(self.seq[seq_i])
@@ -172,99 +171,3 @@ class StepMtr:
             time.sleep(self.interval)
 
         self.stop()
-
-
-class Sample:
-    SEQ = {'wave': StepMtr.SEQ_WAVE,
-           'full': StepMtr.SEQ_FULL,
-           'half': StepMtr.SEQ_HALF}
-
-    DIRECTION = {'cw': StepMtr.CW,
-                 'ccw': StepMtr.CCW}
-
-    def __init__(self, pin1, pin2, pin3, pin4, debug=False):
-        self._dbg = debug
-        self._log = get_logger(__class__.__name__, self._dbg)
-        self._log.debug('pins=%s', (pin1, pin2, pin3, pin4))
-
-        self.sm = StepMtr(pin1, pin2, pin3, pin4,
-                          debug=self._dbg)
-
-    def main(self):
-        self._log.debug('')
-
-        while True:
-            self._log.info('moving ..')
-            self.sm.move()
-
-            prompt = '[0<=count'
-            prompt += '|0<interval[sec]<1'
-            prompt += '|cw|ccw'
-            prompt += '|wave|full|half'
-            prompt += 'NULL=end] '
-            line1 = input(prompt)
-            self._log.debug('line1=%a', line1)
-            if len(line1) == 0:
-                break
-
-            if line1 == 'cw' or line1 == 'ccw':
-                self.sm.direction = self.DIRECTION[line1]
-                self._log.info('direction=%s', self.sm.direction)
-                continue
-
-            if line1 == 'wave' or line1 == 'full' or line1 == 'half':
-                self.sm.seq = self.SEQ[line1]
-                self._log.info('seq=%s', self.sm.seq)
-                continue
-
-            try:
-                num = float(line1)
-            except Exception:
-                self._log.error('invalid command: %a', line1)
-                continue
-
-            if 0 < num < 1:
-                self.sm.interval = num
-                self._log.info('interval=%s', self.sm.interval)
-                continue
-
-            self.sm.count = int(num)
-            self._log.info('count=%s', self.sm.count)
-
-            if self.sm.count < 0:
-                self._log.warning('move forever .. Ctrl-C to stop')
-
-    def end(self):
-        self._log.debug('')
-        self.sm.end()
-
-
-import click
-CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
-
-
-@click.command(context_settings=CONTEXT_SETTINGS, help="""
-StepMtr class
-""")
-@click.argument('pin1', type=int)
-@click.argument('pin2', type=int)
-@click.argument('pin3', type=int)
-@click.argument('pin4', type=int)
-@click.option('--debug', '-d', 'debug', is_flag=True, default=False,
-              help='debug flag')
-def main(pin1, pin2, pin3, pin4, debug):
-    log = get_logger(__name__, debug)
-    log.debug('(pin1, pin2, pin3, pin4)=%s', (pin1, pin2, pin3, pin4))
-
-    app = Sample(pin1, pin2, pin3, pin4, debug=debug)
-
-    try:
-        app.main()
-    finally:
-        log.debug('finally')
-        app.end()
-        log.debug('end')
-
-
-if __name__ == '__main__':
-    main()

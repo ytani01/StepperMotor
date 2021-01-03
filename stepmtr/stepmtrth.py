@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 #
 # (c) 2020 Yoichi Tanibayashi
 #
@@ -6,12 +5,11 @@
 ステッピングモーター制御: マルチスレッド版
 """
 __author__ = 'Yoichi Tanibayashi'
-__date__   = '2020/12'
+__date__ = '2021/01'
 
-from StepMtr import StepMtr
 import threading
-
-from MyLogger import get_logger
+from .stepmtr import StepMtr
+from .my_logger import get_logger
 
 
 class StepMtrTh:
@@ -29,7 +27,6 @@ class StepMtrTh:
     worker: threading.Thread
         ワーカー・スレッド
     """
-
     def __init__(self, pin1, pin2, pin3, pin4,
                  seq=StepMtr.SEQ_WAVE,
                  interval=StepMtr.DEF_INTERVAL,
@@ -55,8 +52,6 @@ class StepMtrTh:
             StepMtr.CW | StepMtr.CCW
         pi: pigpio.pi
             pigpioオブジェクト
-        debug: bool
-            デバッグフラグ
         """
         self._dbg = debug
         self._log = get_logger(__class__.__name__, self._dbg)
@@ -74,6 +69,9 @@ class StepMtrTh:
 
     def set_count(self, count):
         """
+        Parameters
+        ----------
+        count: int
         """
         self._log.debug('count=%s', count)
 
@@ -82,6 +80,9 @@ class StepMtrTh:
 
     def set_interval(self, interval):
         """
+        Parameters
+        ----------
+        interval: float
         """
         self._log.debug('interval=%s', interval)
 
@@ -90,6 +91,10 @@ class StepMtrTh:
 
     def set_direction(self, direction):
         """
+        Parameters
+        ----------
+        direction: int
+            StepMtr.CW or StepMtr.CCW
         """
         self._log.debug('direction=%s', direction)
 
@@ -98,6 +103,10 @@ class StepMtrTh:
 
     def set_seq(self, seq):
         """
+        Parameters
+        ----------
+        seq: list of list of int
+            StepMtr.SEQ_WAVE|FULL|HALF
         """
         self._log.debug('seq=%s', seq)
 
@@ -142,114 +151,3 @@ class StepMtrTh:
         self.stop()
         self.mtr.end()
         self._log.debug('done')
-
-
-"""
-以下、サンプル・コード
-"""
-
-
-class Sample:
-    """サンプル
-    """
-    SEQ = {'wave': StepMtr.SEQ_WAVE,
-           'full': StepMtr.SEQ_FULL,
-           'half': StepMtr.SEQ_HALF}
-
-    DIRECTION = {'cw': StepMtr.CW,
-                 'ccw': StepMtr.CCW}
-
-    def __init__(self, pin1, pin2, pin3, pin4, debug=False):
-        self._dbg = debug
-        self._log = get_logger(__class__.__name__, self._dbg)
-        self._log.debug('pins=%s', (pin1, pin2, pin3, pin4))
-
-        # ``StepMtrTh``オブジェクト作成
-        self.mtr = StepMtrTh(pin1, pin2, pin3, pin4, debug=self._dbg)
-
-    def main(self):
-        self._log.debug('')
-
-        # スタート
-        self.mtr.start()
-
-        while True:
-            prompt = '[0<=count|0>continuous'
-            prompt += '|0<interval[sec]<1'
-            prompt += '|cw|ccw'
-            prompt += '|wave|full|half'
-            prompt += '|NULL=end] '
-            line1 = input(prompt)
-            self._log.debug('line1=%a', line1)
-
-            if len(line1) == 0:
-                # end
-                break
-
-            if line1 == 'cw' or line1 == 'ccw':
-                direction = self.DIRECTION[line1]
-                self._log.info('direction=%s', direction)
-
-                self.mtr.set_direction(direction)
-                continue
-
-            if line1 == 'wave' or line1 == 'full' or line1 == 'half':
-                seq = self.SEQ[line1]
-                self._log.info('seq=%s', seq)
-
-                self.mtr.set_seq(seq)
-                continue
-
-            try:
-                num = float(line1)
-            except Exception:
-                self._log.error('invalid command: %a', line1)
-                continue
-
-            if 0 < num < 1:
-                interval = num
-                self._log.info('interval=%s', interval)
-
-                self.mtr.set_interval(interval)
-                continue
-
-            self.count = int(num)
-            self._log.info('count=%s', self.count)
-
-            self.mtr.set_count(self.count)
-
-    def end(self):
-        self._log.debug('')
-        self.mtr.end()
-
-
-import click
-CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
-
-
-@click.command(context_settings=CONTEXT_SETTINGS, help="""
-""")
-@click.argument('pin1', type=int)
-@click.argument('pin2', type=int)
-@click.argument('pin3', type=int)
-@click.argument('pin4', type=int)
-@click.option('--debug', '-d', 'debug', is_flag=True, default=False,
-              help='debug flag')
-def main(pin1, pin2, pin3, pin4, debug):
-    """サンプル起動用メイン関数
-    """
-    log = get_logger(__name__, debug)
-    log.debug('pins=%s', (pin1, pin2, pin3, pin4))
-
-    app = Sample(pin1, pin2, pin3, pin4, debug=debug)
-
-    try:
-        app.main()
-    finally:
-        log.debug('finally')
-        app.end()
-        log.info('end')
-
-
-if __name__ == '__main__':
-    main()

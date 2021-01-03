@@ -1,4 +1,4 @@
-# Stepper Motor Class for Python3 and pigpio
+# Stepper Motor Class for Raspberry Pi, Python3 and pigpio
 
 ステッピングモーター(stepper motor) Python3ライブラリ
 
@@ -25,18 +25,30 @@
 
 ## 0. TL;DR
 
+Install
 ```bash
 $ cd ~
 $ python3 -m venv env1
 $ cd env1
 $ . ./bin/activate
+
 (env1)$ git clone https://github.com/ytani01/StepperMotor.git
 (env1)$ cd StepperMotor
-(env1)$ pip3 install -r requirements.txt
-(env1)$ sudo pigpiod
-(env1)$ ./StepMtr.py -h
-(env1)$ ./StepMtrTh.py -h
+
+(env1)$ pip install -U pip setuptools wheel
+(env1)$ hash -r
+(env1)$ pip install .
 ```
+
+Run test program
+```bash
+(env1)$ sudo pigpiod
+(env1)$ python -m stepper_motor PIN1 PIN2 PIN3 PIN4
+```
+
+Sample program
+[sample.py](sample.py)
+
 
 ## 1. Hardware
 
@@ -58,9 +70,15 @@ BIN2 -> IN4
 
 ![](doc/ULN2003-module.jpg)
 
-## 2. Software
 
-### 2.0 Architecture
+## 2. API
+
+```bash
+$ python3 -m pydoc stepper_motor
+```
+
+
+## 3. Software Architecture
 
 呼び出し階層
 ```
@@ -73,46 +91,6 @@ BIN2 -> IN4
  -----------------
 ```
 
-### 2.1 create python3 venv
-
-```bash
-$ cd ~
-$ python3 -m venv env1
-```
-
-### 2.2 activate venv
-
-```bash
-$ . ~/env1/bin/activate
-(env1)$
-```
-
-### 2.3 download
-
-```bash
-$ cd ~/env1
-$ git clone https::/github.com/ytani01/StepperMotor.git
-```
-
-### 2.4 install python packages
-
-```bash
-(env1)$ cd ~/env1/StepperMotor
-(env1)$ pip3 install -r requirements.txt
-```
-
-## 3. Sample
-
-see usage as follows:
-```bash
-$ sudo pigpiod
-$ . ~/env1/bin/activate
-(env1)$ cd ~/env1/StepperMotor
-(env1)$ ./StepMtr.py -h
-(env1)$ ./stepMtrTh.py -h
-```
-
-## 4. Class References
 
 ## A. Links
 
